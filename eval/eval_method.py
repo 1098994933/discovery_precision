@@ -17,10 +17,10 @@ def fcv(original_model, X, y, minimum_ratio=0.1, maximum_ratio=0.95, reverse=Fal
     :param y:
     :param minimum_ratio:
     :param maximum_ratio:
-    :param reverse:
-    :param shape:
+    :param reverse: True for use low Y data for training
+    :param details: If return the details for each fcv folder prediction
     :param lite:
-    :param k:
+    :param k: number of fcv folder
     :param m:
     :return:
     """
@@ -190,7 +190,7 @@ def forward_holdout(original_model, X, y, test_ratio, reverse=False):
     if not reverse:
         arr1inds = y.argsort()
     else:
-        arr1inds = y.argsort()[::-1]
+        arr1inds = y.argsort()[::-1]  # for higher
     X = X[arr1inds]
     y = y[arr1inds]
     sample_number = len(X)
@@ -232,36 +232,95 @@ def cal_metric(y_true, y_predict):
                  })
 
 
-def model_efficiency(y_extra_predict, y_inter_predict, task='high', extra_ratio=None, pecentage = 10):
+def model_efficiency(y_extra_predict, y_inter_predict, task='high', prior_random=None, pecentage=10):
     """
     :param y_extra_pred:
     :param y_inter_pred:
     :param task: high for higher task; low for lower task
-    :param extra_ratio:
+    :param prior_random: if None, set to the size of testing set ratio, or set to
+                        prior random search
     :return:
     """
 
-    if extra_ratio is not None:
-        assert 0 < extra_ratio < 1
+    if prior_random is not None:
+        assert 0 < prior_random < 1
 
     assert task == 'high' or task == 'low'
 
     n_extra = len(y_extra_predict)
     n_inter = len(y_inter_predict)
     n_total = (n_extra + n_inter)
-    if extra_ratio is None:
-        extra_ratio = n_extra / n_total
+    all_predict = np.array(list(y_extra_predict) + list(y_inter_predict))
+    test_ratio = n_extra / n_total
+    if prior_random is None:
+        eff = 1
+    else:
+        eff = prior_random / test_ratio
     if task == 'high':
         c = np.percentile(y_extra_predict, pecentage)
+        # c = np.percentile(y_extra_predict, pecentage)
         count_extra = len(np.where(y_extra_predict >= c)[0])
         count_inter = len(np.where(y_inter_predict >= c)[0])
-        me = (count_extra / (count_extra + count_inter)) / extra_ratio
+        me = (count_extra / (count_extra + count_inter)) / test_ratio  # * eff
+        # print((count_extra / (count_extra + count_inter)))
     else:
-        c = np.percentile(y_extra_predict, 100-pecentage)
+        c = np.percentile(y_extra_predict, 100 - pecentage)
         count_extra = len(np.where(y_extra_predict <= c)[0])
         count_inter = len(np.where(y_inter_predict <= c)[0])
-        me = (count_extra / (count_extra + count_inter)) / extra_ratio
+        me = (count_extra / (count_extra + count_inter)) / test_ratio  # * eff
+        # print((count_extra / (count_extra + count_inter)) / test_ratio)
     # print(c)
     # print(count_extra)
     # print(count_inter)
     return me
+
+
+def discovery_precision(y_extra_predict, y_inter_predict, y_extra_true, y_inter_true, alpha=None):
+    """
+    :param y_extra_predict: y prediction in validation set
+    :param y_inter_predict: y out of bag prediction  in training set
+    :param y_extra_true: y true in validation set
+    :param y_inter_true: y true in training set
+    :param alpha: top percent of predicted value scale:[0,1]
+                  default set to test ratio  = len(Validation set)/ len(Total set)
+    :return: score of discovery precision
+    """
+    if alpha is None:
+        alpha = len(y_extra_true)/(len(y_extra_true) + len(y_inter_true))
+    percent = alpha * 100
+    all_true = np.array(list(y_extra_true) + list(y_inter_true))
+    all_predict = np.array(list(y_extra_predict) + list(y_inter_predict))
+    y_true_limit = np.percentile(all_true, 100 - percent)
+    y_predict_limit = np.percentile(all_predict, 100 - percent)
+    count = 0
+    for i in range(len(all_true)):
+        if all_true[i] >= y_true_limit and all_predict[i] >= y_predict_limit:
+            count = count + 1
+    n_total = len([i for i in all_predict if i >= y_predict_limit])
+    score = count / n_total  # top FOM discovery probability
+    return score
+
+
+def score_dp_by_forward_holdout(model, X_train, Y_train, alpha=None,
+                                test_ratio=0.1, reverse=True, cv_fold=5):
+    """
+    :param model:
+    :param X_train:
+    :param Y_train:
+    :param alpha:
+    :param test_ratio: test_ratio for FH method
+    :param reverse:
+    :param cv_fold: out of bag prediction cv folder
+    :return: score_dp
+    """
+    y_true, y_predict, X_train_h, y_train_h = forward_holdout(model, X_train, Y_train,
+                                                              test_ratio=test_ratio,
+                                                              reverse=reverse)
+    # get out of bag prediction by cv prediction
+    y_inter_true, y_train_predict = cv(model, X_train_h, y_train_h, k=cv_fold)
+    y_extra_predict = y_predict
+    y_inter_predict = y_train_predict
+    y_extra_true = y_true
+    y_inter_true = y_inter_true
+    score = discovery_precision(y_extra_predict, y_inter_predict, y_extra_true, y_inter_true, alpha=alpha)
+    return score

@@ -1,5 +1,4 @@
 import os
-import scipy
 import pandas as pd
 import numpy as np
 from sklearn.ensemble import RandomForestRegressor
@@ -11,8 +10,8 @@ from sklearn.neighbors import KNeighborsRegressor
 from sklearn.linear_model import Ridge, Lasso, ElasticNet, LinearRegression
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.svm import SVR
-# from ml.vis import cal_metric, model_efficiency
-from eval.eval_method import fcv, cv, forward_holdout, forward_holdout_split, cal_metric, model_efficiency
+from eval.eval_method import fcv, cv, forward_holdout, forward_holdout_split, cal_metric, model_efficiency, \
+    discovery_precision
 import matplotlib.pyplot as plt
 
 
@@ -46,8 +45,8 @@ if __name__ == '__main__':
     }
     method_config = {
         'CV': {"metric": ['R2', 'RMSE', 'MAE']},
-        'FCV': {"metric": ['R2', 'RMSE', 'MAE', 'ME']},
-        'FH': {"metric": ['R2', 'RMSE', 'MAE', 'ME']}
+        'FCV': {"metric": ['R2', 'RMSE', 'MAE', 'DP']},
+        'FH': {"metric": ['R2', 'RMSE', 'MAE']}
     }
     # record all result
     result_df = pd.DataFrame()
@@ -78,10 +77,6 @@ if __name__ == '__main__':
 
         if os.path.exists(data_file_name):
             ml_dataset = pd.read_csv(data_file_name)
-            # len_a = len(ml_dataset)
-            # ml_dataset.drop_duplicates(inplace=True)  # delete duplicate
-            # if len_a-len(ml_dataset) > 0:
-            #     print("drop:", len_a-len(ml_dataset))
             features = list(ml_dataset.columns[:-1])  # target is the last column
         else:
             raise Exception(f"{data_file_name} dataset not find")
@@ -97,8 +92,13 @@ if __name__ == '__main__':
 
         var = VarianceThreshold(threshold=0)
         X = var.fit_transform(X)
+
         # endregion
         for reverse in [True, False]:
+            if reverse:  # higher means better
+                Y = Y
+            else:
+                Y = -Y
             result_info = {}  # result for one task
             # split all data into train and test, False for higher extra task
             X_train, Y_train, X_test, Y_test = forward_holdout_split(X, Y, test_ratio, reverse=reverse)
@@ -120,8 +120,7 @@ if __name__ == '__main__':
             Y_train = sc.fit_transform(np.array(Y_train).reshape(-1, 1)).flatten()
             Y_test = sc.transform(np.array(Y_test).reshape(-1, 1)).flatten()
 
-            # config
-
+            # region ML modeling and eval
             for alg_name in alg_dict.keys():
                 model = alg_dict[alg_name]
 
@@ -150,22 +149,22 @@ if __name__ == '__main__':
                 # region fcv
                 val_method = 'FCV'
                 y_true, y_predict, details = fcv(model, X_train, Y_train, k=5, details=True)
-                mes = [
-                    model_efficiency(details['y_test_predicts'][i], details['y_train_predicts'][i], extra_ratio=0.1) for
-                    i in range(len(details['y_trains']))]
-                me = np.median(mes)
+                dp_scores = [discovery_precision(details['y_test_predicts'][i], details['y_train_predicts'][i],
+                                                 details['y_tests'][i], details['y_trains'][i])
+                             for i in range(len(details['y_trains']))]
+                score = np.median(dp_scores)
 
-                r2s = [r2_score(details['y_test_predicts'][i], details['y_tests'][i]) for i in
-                       range(len(details['y_trains']))]
-                r2 = np.median(r2s)
+                r2_scores = [r2_score(details['y_test_predicts'][i], details['y_tests'][i]) for i in
+                             range(len(details['y_trains']))]
+                r2 = np.median(r2_scores)
 
                 evaluation_matrix = cal_metric(y_true, y_predict)
                 evaluation_matrix['R2'] = r2
                 metrics = ['R2', 'R', 'RMSE', 'MAE']
                 for metric in metrics:
                     dict_append(result_info, f'{val_method} {metric} {val_set}', evaluation_matrix[metric])
-                metric = 'ME'
-                dict_append(result_info, f'{val_method} {metric} {val_set}', me)
+                metric = 'DP'
+                dict_append(result_info, f'{val_method} {metric} {val_set}', score)
                 # endregion
 
                 # region forward holdout
@@ -181,27 +180,22 @@ if __name__ == '__main__':
                 # training data predictions
                 y_train_predict = model.predict(X_train_h)
                 # get cv prediction
-                _, y_train_predict = cv(model, X_train_h, y_train_h, k=val_config['cv_fold'])
+                y_inter_true, y_train_predict = cv(model, X_train_h, y_train_h, k=val_config['cv_fold'])
 
                 y_train_predict_valid = y_train_predict.copy()
                 y_predict_valid = y_predict.copy()
 
-                if reverse == True:
-                    me = model_efficiency(y_predict, y_train_predict, task='low')
-                else:
-                    me = model_efficiency(y_predict, y_train_predict, task='high')
-                metric = 'ME'
-                dict_append(result_info, f'{val_method} {metric} {val_set}', me)
+                valid_me = score
 
-                valid_me = me
-                for i in [10, 20, 30, 40, 50, 60, 70, 80, 90]:
-                    if reverse == True:
-                        me = model_efficiency(y_predict, y_train_predict, task='low', pecentage=i)
-                    else:
-                        me = model_efficiency(y_predict, y_train_predict, task='high', pecentage=i)
-                    metric = f'ME({i})'
-                    dict_append(result_info, f'{val_method} {metric} {val_set}', me)
-                    method_config['FH']["metric"].append(metric)
+                y_extra_predict = y_predict
+                y_inter_predict = y_train_predict
+                y_extra_true = y_true
+                y_inter_true = y_inter_true
+
+                score = discovery_precision(y_extra_predict, y_inter_predict, y_extra_true, y_inter_true)
+                metric = f'DP'
+                dict_append(result_info, f'{val_method} {metric} {val_set}', score)
+                method_config['FH']["metric"].append(metric)
                 # endregion
 
                 model_val = alg_dict[alg_name]
@@ -216,62 +210,31 @@ if __name__ == '__main__':
                 y_true = Y_test
                 y_train_predict = model_val.predict(X_train)
 
-                # 使用CV 预测值估计ME
-                _, y_train_predict = cv(model_val, X_train, Y_train, k=val_config['cv_fold'])
-                if reverse == True:
-                    me = model_efficiency(y_predict, y_train_predict, task='low')
-                else:
-                    me = model_efficiency(y_predict, y_train_predict, task='high')
+                # cv to get out of bag prediction
+                y_inter_true, y_train_predict = cv(model_val, X_train, Y_train, k=val_config['cv_fold'])
+                y_extra_predict = y_predict
+                y_inter_predict = y_train_predict
+                y_extra_true = y_true
+                y_inter_true = y_inter_true
 
-                test_me = me
+                test_me = score
                 evaluation_matrix = cal_metric(y_true, y_predict)
                 # ====================== record performance========================
 
                 for metric in metrics:
                     dict_append(result_info, f'{metric} {val_set}', evaluation_matrix[metric])
-                metric = 'ME'
-                dict_append(result_info, f'{metric} {val_set}', me)
 
-                for i in [10, 20, 30, 40, 50, 60, 70, 80, 90]:
-                    if reverse == True:
-                        me = model_efficiency(y_predict, y_train_predict, task='low', pecentage=i)
-                    else:
-                        me = model_efficiency(y_predict, y_train_predict, task='high', pecentage=i)
-                    metric = f'ME({i})'
-                    dict_append(result_info, f'{metric} {val_set}', me)
-                # metric = 'MPG'
-                # n_samples = len(y_train_predict)
-                # y_predict_bootstrap = np.random.choice(y_predict, n_samples, replace=True)
-                #
-                # # MPG = scipy.stats.entropy(y_predict_bootstrap, y_train_predict)
-                # MPG = abs(y_predict.mean() - y_train_predict.mean())
-                # dict_append(result_info, f'{metric} {val_set}', MPG)
-                # MPG_test = MPG
+                score = discovery_precision(y_extra_predict, y_inter_predict, y_extra_true, y_inter_true)
+                metric = f'DP'
+                dict_append(result_info, f'{metric} {val_set}', score)
                 # endregion
 
                 # ====================== record performance end ========================
-                # debug
-                # if abs(test_me-valid_me) > 3 and abs(MPG_test-MPG_val)<0.2 :
-                #     print("test_me", test_me)
-                #     print("valid_me", valid_me)
-                #     print("MPG_val", MPG_val)
-                #     print("MPG_test", MPG_test)
-                #     print("test plot")
-                #     plt.hist(y_train_predict, bins=100)
-                #     plt.hist(y_predict, alpha=0.8, bins=100)
-                #     plt.show()
-                #
-                #     print("valid plot")
-                #     plt.hist(y_train_predict_valid, bins=100)
-                #     plt.hist(y_predict_valid, alpha=0.8, bins=100)
-                #     plt.show()
-
                 # result for one data set
                 print(result_info)
                 res_df_one = pd.DataFrame(result_info)  # result of one dataset
             if len(res_df_one) > 2:
                 print(res_df_one)
-                # cal rank cor
                 # cal rank of test error
 
                 metric_test = method_config['FH']["metric"]
@@ -286,7 +249,7 @@ if __name__ == '__main__':
                         res_df_one[val_col] = res_df_one[f'{method} {metric} val'].rank(method='first',
                                                                                         ascending=False)
                 result_df = pd.concat([result_df, res_df_one], axis=0)
-
+            # endregion
         # summary the result clean the result_info
         result_df.to_csv('result_df.csv')
     print("finished")

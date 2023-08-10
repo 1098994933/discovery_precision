@@ -1,5 +1,6 @@
 """
-code for draw figures
+code for draw analysis figures
+run evaluation.py to generate result.csv
 """
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -48,7 +49,7 @@ if __name__ == '__main__':
             fig = ax.get_figure()
         plt.xlabel("Test Metric", fontsize=20)
         plt.ylabel("Validation Metric ", fontsize=20)
-        plt.savefig('./figures/1.png', bbox_inches='tight')
+        plt.savefig('./figures/corr.png', bbox_inches='tight')
     # endregion
 
     # region corr heatmap test
@@ -93,9 +94,11 @@ if __name__ == '__main__':
             plt.scatter(x=result_df[x], y=result_df[y], label=method, alpha=0.6)
         plt.xlabel(f'{metric} test')
         plt.ylabel(f'{metric} val')
-        plt.xlim(0, 4.5)
-        plt.ylim(0, 4.5)
-        plt.plot([0, 4.5], [0, 4.5], '--', c='black')
+        lim_max = 2.5
+        lim_min = 0
+        plt.plot([lim_min, lim_max], [lim_min, lim_max], color='black', linestyle="--")
+        plt.xlim(lim_min, lim_max)
+        plt.ylim(lim_min, lim_max)
         plt.legend(loc=2, bbox_to_anchor=(1, 1))
         plt.savefig(f'./figures/{metric}.png', bbox_inches='tight')
     # RMSE
@@ -108,9 +111,11 @@ if __name__ == '__main__':
             plt.scatter(x=result_df[x], y=result_df[y], label=method, alpha=0.6)
         plt.xlabel(f'{metric} test')
         plt.ylabel(f'{metric} val')
-        plt.xlim(0, 6)
-        plt.ylim(0, 6)
-        plt.plot([0, 6], [0, 6], '--', c='black')
+        lim_max = 2.5
+        lim_min = 0
+        plt.plot([lim_min, lim_max], [lim_min, lim_max], color='black', linestyle="--")
+        plt.xlim(lim_min, lim_max)
+        plt.ylim(lim_min, lim_max)
         plt.legend(loc=2, bbox_to_anchor=(1, 1))
         plt.savefig(f'./figures/{metric}.png', bbox_inches='tight')
     # R2
@@ -128,17 +133,17 @@ if __name__ == '__main__':
         plt.plot([-50, 1], [-50, 1], '--', c='black')
         plt.legend(loc=2, bbox_to_anchor=(1, 1))
         plt.savefig(f'./figures/{metric}.png', bbox_inches='tight')
-    # ME
+    # DP
     with plt.style.context(['science', 'no-latex']):
         fig, ax = plt.subplots(dpi=400, figsize=(5, 5))
-        metric = 'ME'
+        metric = 'DP'
         for method in val_methods[-2:]:
             x = f'{metric} test'
             y = f'{method} {metric} val'
             plt.scatter(x=result_df[x], y=result_df[y], label=method, alpha=0.6)
-        plt.xlabel(f'{metric}(10) test')
-        plt.ylabel(f'{metric}(10) val')
-        lim_max = 8
+        plt.xlabel(f'{metric} test')
+        plt.ylabel(f'{metric} val')
+        lim_max = 1
         lim_min = 0
         plt.plot([lim_min, lim_max], [lim_min, lim_max], color='black', linestyle="--")
         plt.xlim(lim_min, lim_max)
@@ -147,92 +152,91 @@ if __name__ == '__main__':
         plt.savefig(f'./figures/{metric}.png', bbox_inches='tight')
     # endregion
 
-    # region ME10
+    # region DP
+    metric = 'DP'
     with plt.style.context(['science', 'no-latex']):
-        x = 'ME(10) test'
-        y = 'FH ME(10) val'
-        result_df_filter = result_df[result_df[y] > 0]
-        r2 = r2_score(result_df_filter[x], result_df_filter[y])
+        x = f'{metric} test'
+        y = f'FH {metric} val'
+        r2 = r2_score(result_df[x], result_df[y])
         fig, ax = plt.subplots(dpi=400, figsize=(5, 5))
-        plt.scatter(result_df_filter[x], result_df_filter[y], c='blue', alpha=0.6)
+        plt.scatter(result_df[x], result_df[y], c='blue', alpha=0.6)
         plt.xlabel(x)
         plt.ylabel(y)
-
-        lim_max = 10
+        lim_max = 1
         lim_min = 0
         plt.plot([lim_min, lim_max], [lim_min, lim_max], color='black', linestyle="--")
         plt.xlim(lim_min, lim_max)
         plt.ylim(lim_min, lim_max)
         plt.text(0.05, 0.95, "$R^2={r2}$".format(r2=round(r2, 2)), transform=ax.transAxes)
-        plt.savefig(f'./figures/ME (10)_R2.png', bbox_inches='tight')
+        plt.savefig(f'./figures/{metric}_R2.png', bbox_inches='tight')
     # endregion
-
-    # region ME90
-    with plt.style.context(['science', 'no-latex']):
-        x = 'ME(90) test'
-        y = 'FH ME(90) val'
-        result_df_filter = result_df[result_df[y] > 0]
-        r2 = r2_score(result_df_filter[x], result_df_filter[y])
-        fig, ax = plt.subplots(dpi=400, figsize=(5, 5))
-        plt.scatter(result_df_filter[x], result_df_filter[y], c='blue', alpha=0.6)
-        plt.xlabel(x)
-        plt.ylabel(y)
-        # x_data = result_df[x]
-        # y_data = result_df[y]
-        #
-        lim_max = 12.5
-        lim_min = 0
-        plt.plot([lim_min, lim_max], [lim_min, lim_max], color='black', linestyle="--")
-        # plt.xticks(fontsize=12, fontweight='bold')
-        # plt.yticks(fontsize=12, fontweight='bold')
-        # plt.xlabel(x, fontsize=12, fontweight='bold')
-        # plt.ylabel(y, fontsize=12, fontweight='bold')
-        plt.xlim(lim_min, lim_max)
-        plt.ylim(lim_min, lim_max)
-        plt.text(0.05, 0.95, "$R^2={r2}$".format(r2=round(r2, 2)), transform=ax.transAxes)
-        plt.savefig(f'./figures/ME (90)_R2.png', bbox_inches='tight')
-    # endregion
-
-    # region ME10 vs 90
-    with plt.style.context(['science', 'no-latex']):
-        x = 'ME(90) test'
-        y = 'FH ME(10) val'
-        result_df_filter = result_df[result_df[y] > 0]
-        r2 = r2_score(result_df_filter[x], result_df_filter[y])
-        fig, ax = plt.subplots(dpi=400, figsize=(5, 5))
-        plt.scatter(result_df_filter[x], result_df_filter[y], c='blue', alpha=0.6)
-        plt.xlabel(x)
-        plt.ylabel(y)
-        #
-        lim_max = 12.5
-        lim_min = 0
-        plt.plot([lim_min, lim_max], [lim_min, lim_max], color='black', linestyle="--")
-        plt.xlim(lim_min, lim_max)
-        plt.ylim(lim_min, lim_max)
-        plt.text(0.05, 0.95, "$R^2={r2}$".format(r2=round(r2, 2)), transform=ax.transAxes)
-        plt.savefig(f'./figures/ME (10)v(90)_R2.png', bbox_inches='tight')
-    # endregion
-
-    # region ME30 vs 90
-    with plt.style.context(['science', 'no-latex']):
-        x = 'ME(90) test'
-        y = 'FH ME(30) val'
-        result_df_filter = result_df[result_df[y] > 0]
-        r2 = r2_score(result_df_filter[x], result_df_filter[y])
-        fig, ax = plt.subplots(dpi=400, figsize=(5, 5))
-        plt.scatter(result_df_filter[x], result_df_filter[y], c='blue', alpha=0.6)
-        plt.xlabel(x)
-        plt.ylabel(y)
-
-        lim_max = 20
-        lim_min = 0
-        plt.plot([lim_min, lim_max], [lim_min, lim_max], color='black', linestyle="--")
-        plt.xlim(lim_min, lim_max)
-        plt.ylim(lim_min, lim_max)
-        plt.text(0.05, 0.95, "$R^2={r2}$".format(r2=round(r2, 2)), transform=ax.transAxes)
-        plt.savefig(f'./figures/ME (30)v(90)_R2.png', bbox_inches='tight')
-    # endregion
-
+    #
+    # # region ME90
+    # with plt.style.context(['science', 'no-latex']):
+    #     x = 'ME(90) test'
+    #     y = 'FH ME(90) val'
+    #     result_df_filter = result_df[result_df[y] > 0]
+    #     r2 = r2_score(result_df_filter[x], result_df_filter[y])
+    #     fig, ax = plt.subplots(dpi=400, figsize=(5, 5))
+    #     plt.scatter(result_df_filter[x], result_df_filter[y], c='blue', alpha=0.6)
+    #     plt.xlabel(x)
+    #     plt.ylabel(y)
+    #     # x_data = result_df[x]
+    #     # y_data = result_df[y]
+    #     #
+    #     lim_max = 12.5
+    #     lim_min = 0
+    #     plt.plot([lim_min, lim_max], [lim_min, lim_max], color='black', linestyle="--")
+    #     # plt.xticks(fontsize=12, fontweight='bold')
+    #     # plt.yticks(fontsize=12, fontweight='bold')
+    #     # plt.xlabel(x, fontsize=12, fontweight='bold')
+    #     # plt.ylabel(y, fontsize=12, fontweight='bold')
+    #     plt.xlim(lim_min, lim_max)
+    #     plt.ylim(lim_min, lim_max)
+    #     plt.text(0.05, 0.95, "$R^2={r2}$".format(r2=round(r2, 2)), transform=ax.transAxes)
+    #     plt.savefig(f'./figures/ME (90)_R2.png', bbox_inches='tight')
+    # # endregion
+    #
+    # # region ME10 vs 90
+    # with plt.style.context(['science', 'no-latex']):
+    #     x = 'ME(90) test'
+    #     y = 'FH ME(10) val'
+    #     result_df_filter = result_df[result_df[y] > 0]
+    #     r2 = r2_score(result_df_filter[x], result_df_filter[y])
+    #     fig, ax = plt.subplots(dpi=400, figsize=(5, 5))
+    #     plt.scatter(result_df_filter[x], result_df_filter[y], c='blue', alpha=0.6)
+    #     plt.xlabel(x)
+    #     plt.ylabel(y)
+    #     #
+    #     lim_max = 12.5
+    #     lim_min = 0
+    #     plt.plot([lim_min, lim_max], [lim_min, lim_max], color='black', linestyle="--")
+    #     plt.xlim(lim_min, lim_max)
+    #     plt.ylim(lim_min, lim_max)
+    #     plt.text(0.05, 0.95, "$R^2={r2}$".format(r2=round(r2, 2)), transform=ax.transAxes)
+    #     plt.savefig(f'./figures/ME (10)v(90)_R2.png', bbox_inches='tight')
+    # # endregion
+    #
+    # # region ME30 vs 90
+    # with plt.style.context(['science', 'no-latex']):
+    #     x = 'ME(90) test'
+    #     y = 'FH ME(30) val'
+    #     result_df_filter = result_df[result_df[y] > 0]
+    #     r2 = r2_score(result_df_filter[x], result_df_filter[y])
+    #     fig, ax = plt.subplots(dpi=400, figsize=(5, 5))
+    #     plt.scatter(result_df_filter[x], result_df_filter[y], c='blue', alpha=0.6)
+    #     plt.xlabel(x)
+    #     plt.ylabel(y)
+    #
+    #     lim_max = 20
+    #     lim_min = 0
+    #     plt.plot([lim_min, lim_max], [lim_min, lim_max], color='black', linestyle="--")
+    #     plt.xlim(lim_min, lim_max)
+    #     plt.ylim(lim_min, lim_max)
+    #     plt.text(0.05, 0.95, "$R^2={r2}$".format(r2=round(r2, 2)), transform=ax.transAxes)
+    #     plt.savefig(f'./figures/ME (30)v(90)_R2.png', bbox_inches='tight')
+    # # endregion
+    #
     # MAE
     with plt.style.context(['science', 'no-latex']):
         x = 'MAE test'
@@ -257,7 +261,7 @@ if __name__ == '__main__':
         plt.ylim(lim_min, lim_max)
         plt.text(0.05, 0.95, "$R^2={r2}$".format(r2=round(r2, 2)), transform=ax.transAxes)
         plt.savefig(f'./figures/MAE_R2.png', bbox_inches='tight')
-    # RMSE
+    # FH RMSE
     with plt.style.context(['science', 'no-latex']):
         x = 'RMSE test'
         y = 'FH RMSE val'
@@ -270,15 +274,11 @@ if __name__ == '__main__':
         lim_max = 2
         lim_min = 0
         plt.plot([lim_min, lim_max], [lim_min, lim_max], color='black', linestyle="--")
-        # plt.xticks(fontsize=12, fontweight='bold')
-        # plt.yticks(fontsize=12, fontweight='bold')
-        # plt.xlabel(x, fontsize=12, fontweight='bold')
-        # plt.ylabel(y, fontsize=12, fontweight='bold')
         plt.xlim(lim_min, lim_max)
         plt.ylim(lim_min, lim_max)
         plt.text(0.05, 0.95, "$R^2={r2}$".format(r2=round(r2, 2)), transform=ax.transAxes)
         plt.savefig(f'./figures/RMSE_R2.png', bbox_inches='tight')
-    # R2
+    # FH R2
     with plt.style.context(['science', 'no-latex']):
         x = 'R2 test'
         y = 'FH R2 val'
@@ -301,24 +301,3 @@ if __name__ == '__main__':
         plt.ylim(lim_min, lim_max)
         plt.text(0.05, 0.95, "$R^2={r2}$".format(r2=round(r2, 2)), transform=ax.transAxes)
         plt.savefig(f'./figures/R2_R2.png', bbox_inches='tight')
-
-    # ME(x).mean in testing set
-    with plt.style.context(['science', 'no-latex']):
-        fig, ax = plt.subplots(dpi=400, figsize=(5, 5))
-        data_dict = {
-            "x": [],
-            "y": []
-        }
-        df2 = pd.DataFrame()
-        for i in [10, 20, 30, 40, 50, 60, 70, 80, 90]:
-            x = f'ME({i}) test'
-            data_dict['x'].extend([x[:-5]] * len(result_df[x]))
-            data_dict['y'].extend(list(result_df[x]))
-        df_data = pd.DataFrame(data_dict)
-        sns.boxplot(x="x", y="y", data=df_data, palette="Set1")
-        for tick in ax.get_xticklabels():
-            tick.set_rotation(90)
-            tick.set_fontsize('8')
-        plt.xlabel("")
-        plt.ylabel("")
-        plt.savefig(f'./figures/boxplot_ME.png', bbox_inches='tight')
