@@ -1,9 +1,8 @@
 import unittest
-import sklearn.metrics
-from util.eval.eval_method import fcv, cv, forward_holdout, forward_holdout_split
+from eval.eval_method import fcv, cv, forward_holdout, forward_holdout_split, discovery_precision
 import numpy as np
 from sklearn.ensemble import RandomForestRegressor
-from util.ml.metrics import model_efficiency
+from ml.metrics import model_efficiency
 from sklearn.metrics import mean_absolute_error, r2_score
 
 
@@ -68,21 +67,14 @@ class EvalMethodTest(unittest.TestCase):
         print(max(y_train))
 
     @staticmethod
-    def test_model_efficiency():
-        me = model_efficiency([1, 2, 3, 4, 5, 6], [-1, -2, -3, -4, -5, -6])
-
-        assert me == 2
-        me = model_efficiency([1, 2, 3, 4, 5, 6], [-1, -2, -3, -4, -5, -6], task='low')
-        assert me == 0
-
-        me = model_efficiency([1, 2, 3, -9, -9, -9], [-1, -2, -3, -4, -5, -6], task='high')
-        assert me == 1
-
-        me = model_efficiency([1, 2, 3, -9, -9, -9], [9, 9, 9, -4, -5, -6], task='high')
-        assert me == 1
-
-        me = model_efficiency([1, 2, 3, -9, -9, -9], [9, 9, 9, -4, -5, -6, -1, -1], task='high')
-        assert me == (3 / 6) / (6 / 14)
+    def test_discovery_precision():
+        y_extra_true = [8, 9, 10, 11]
+        y_extra_predict = [0.8, 0.9, 1, 1.1]
+        y_inter_predict = [0.1, 0.2, 0.3, -1]
+        y_inter_true = [1, 2, 3, 4]
+        score = discovery_precision(y_extra_predict, y_inter_predict, y_extra_true, y_inter_true)
+        print(score)
+        assert score == 1
 
 
 if __name__ == '__main__':
