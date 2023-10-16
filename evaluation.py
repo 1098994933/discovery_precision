@@ -10,8 +10,7 @@ from sklearn.neighbors import KNeighborsRegressor
 from sklearn.linear_model import Ridge, Lasso, ElasticNet, LinearRegression
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.svm import SVR
-from eval.eval_method import fcv, cv, forward_holdout, forward_holdout_split, cal_metric, model_efficiency, \
-    discovery_precision
+from eval.eval_method import fcv, cv, forward_holdout, forward_holdout_split, cal_metric, discovery_precision
 
 
 def dict_append(d, key, obj):
