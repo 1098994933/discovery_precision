@@ -12,14 +12,11 @@ from sklearn.neighbors import KNeighborsRegressor
 from sklearn.linear_model import Ridge, Lasso, ElasticNet, LinearRegression
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.svm import SVR
-# from ml.vis import cal_metric, model_efficiency
-from eval.eval_method import fcv, cv, forward_holdout, forward_holdout_split, cal_metric, model_efficiency, \
+from eval.eval_method import forward_holdout, cal_metric, \
     score_dp_by_forward_holdout
-import matplotlib.pyplot as plt
 import warnings
+
 warnings.filterwarnings("ignore")
-
-
 
 
 def dict_append(d, key, obj):
@@ -184,7 +181,7 @@ if __name__ == '__main__':
                           "score std": [np.std(score_list)],
                           "DP std": [np.std(dp_score_list)],
                           "total iteration": [iter_n + 1],
-                          "find material": [len(y_target)/n_rows]}
+                          "find material": [len(y_target) / n_rows]}
             res_df_one = pd.DataFrame(result_one)  # result of one dataset
             result_df = pd.concat([result_df, res_df_one], axis=0)
         result_df.to_csv(f'simulation_{eval_score}.csv', index=False)

@@ -31,51 +31,13 @@ def cal_metric(y_true, y_predict):
     MAE = mean_absolute_error(y_true, y_predict)
     R2 = r2_score(y_true, y_predict)
     pccs = pearsonr(y_true, y_predict)[0]
-    # mre = mean_relative_error(y_true, y_predict)
-    return dict({"n": n, "MSE": MSE, "RMSE": RMSE, "MSE": MSE, "MAE": MAE, "R2": R2, 'R': pccs,  # 'MRE': mre
+    return dict({"n": n, "MSE": MSE, "RMSE": RMSE, "MSE": MSE, "MAE": MAE, "R2": R2, 'R': pccs,
                  })
-
-
-def model_efficiency(y_extra_predict, y_inter_predict, task='high', extra_ratio=None):
-    """
-    :param y_extra_pred:
-    :param y_inter_pred:
-    :param task: high for higher task; low for lower task
-    :param extra_ratio:
-    :return:
-    """
-
-    if extra_ratio is not None:
-        assert 0 < extra_ratio < 1
-
-    assert task == 'high' or task == 'low'
-
-    n_extra = len(y_extra_predict)
-    n_inter = len(y_inter_predict)
-    n_total = (n_extra + n_inter)
-    if extra_ratio is None:
-        extra_ratio = n_extra / n_total
-    if task == 'high':
-        c = np.percentile(y_extra_predict, 10)
-        count_extra = len(np.where(y_extra_predict >= c)[0])
-        count_inter = len(np.where(y_inter_predict >= c)[0])
-        me = (count_extra / (count_extra + count_inter)) / extra_ratio
-    else:
-        c = np.percentile(y_extra_predict, 90)
-        count_extra = len(np.where(y_extra_predict <= c)[0])
-        count_inter = len(np.where(y_inter_predict <= c)[0])
-        me = (count_extra / (count_extra + count_inter)) / extra_ratio
-    return me
 
 
 def true_predict_plot(y_true, y_predict, y_train, y_train_predict, show_metric=True):
     """
     vis for regression task
-    :param show_metric:
-    :param y_true: y of test data
-    :param y_predict: y_predict of test data
-    :param y_train: y_train
-    :param y_train_predict:
     :return:
     """
     evaluation_metric = cal_metric(y_true, y_predict)
@@ -83,10 +45,10 @@ def true_predict_plot(y_true, y_predict, y_train, y_train_predict, show_metric=T
     lim_max = max(max(y_predict), max(y_true), max(y_train), max(y_train_predict)) * 1.02
     lim_min = min(min(y_predict), min(y_true), min(y_train), min(y_train_predict)) * 0.98
     plt.figure(figsize=(7, 5), dpi=400)
-    plt.rcParams['font.sans-serif'] = ['Arial']  # 设置字体
-    plt.rcParams['axes.unicode_minus'] = False  # 显示负号
-    plt.grid(linestyle="--")  # 设置背景网格线为虚线
-    ax = plt.gca()  # 获取坐标轴对象
+    plt.rcParams['font.sans-serif'] = ['Arial']
+    plt.rcParams['axes.unicode_minus'] = False
+    plt.grid(linestyle="--")
+    ax = plt.gca()
     plt.scatter(y_true, y_predict, color='red', alpha=0.4, label='test')
     plt.scatter(y_train, y_train_predict, color='blue', alpha=0.4, label='train')
     plt.plot([lim_min, lim_max], [lim_min, lim_max], color='blue')

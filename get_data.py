@@ -1,5 +1,5 @@
 """
-code for get benchmark dataset
+code for get benchmark dataset and features calculation by Magpie
 """
 import os
 import pandas as pd
@@ -34,6 +34,7 @@ if __name__ == '__main__':
         if os.path.exists(data_file_name):
             ml_dataset = pd.read_csv(data_file_name)
             features = list(ml_dataset.columns[:-1])
+            print(f" {dataset_name} data size:", len(ml_dataset))
         else:
             # save dataset with calculated features
             df = load_dataset(dataset_name)

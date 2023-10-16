@@ -12,7 +12,6 @@ from sklearn.tree import DecisionTreeRegressor
 from sklearn.svm import SVR
 from eval.eval_method import fcv, cv, forward_holdout, forward_holdout_split, cal_metric, model_efficiency, \
     discovery_precision
-import matplotlib.pyplot as plt
 
 
 def dict_append(d, key, obj):
@@ -61,7 +60,6 @@ if __name__ == '__main__':
         "LinearRegression": LinearRegression(),
         'LinearSVR': SVR(kernel='linear'),
         "GradientBoosting": GradientBoostingRegressor(),
-        # "AdaBoost": AdaBoostRegressor(),
         "ExtraTrees": ExtraTreesRegressor(),
         "RandomForest": RandomForestRegressor(),
         "KNeighbors": KNeighborsRegressor(),
@@ -236,7 +234,6 @@ if __name__ == '__main__':
             if len(res_df_one) > 2:
                 print(res_df_one)
                 # cal rank of test error
-
                 metric_test = method_config['FH']["metric"]
                 for metric in metric_test:
                     test_col = f'rank_{metric}_test'

@@ -174,7 +174,7 @@ def forward_holdout_split(X, y, test_ratio, reverse=False):
 
 def forward_holdout(original_model, X, y, test_ratio, reverse=False):
     """
-    holdout
+    forward holdout method FH
     :param original_model:
     :param X:
     :param y:
@@ -227,56 +227,13 @@ def cal_metric(y_true, y_predict):
     MAE = mean_absolute_error(y_true, y_predict)
     R2 = r2_score(y_true, y_predict)
     pccs = pearsonr(y_true, y_predict)[0]
-    # mre = mean_relative_error(y_true, y_predict)
-    return dict({"n": n, "MSE": MSE, "RMSE": RMSE, "MSE": MSE, "MAE": MAE, "R2": R2, 'R': pccs,  # 'MRE': mre
+    return dict({"n": n, "MSE": MSE, "RMSE": RMSE, "MSE": MSE, "MAE": MAE, "R2": R2, 'R': pccs,
                  })
-
-
-def model_efficiency(y_extra_predict, y_inter_predict, task='high', prior_random=None, pecentage=10):
-    """
-    :param y_extra_pred:
-    :param y_inter_pred:
-    :param task: high for higher task; low for lower task
-    :param prior_random: if None, set to the size of testing set ratio, or set to
-                        prior random search
-    :return:
-    """
-
-    if prior_random is not None:
-        assert 0 < prior_random < 1
-
-    assert task == 'high' or task == 'low'
-
-    n_extra = len(y_extra_predict)
-    n_inter = len(y_inter_predict)
-    n_total = (n_extra + n_inter)
-    all_predict = np.array(list(y_extra_predict) + list(y_inter_predict))
-    test_ratio = n_extra / n_total
-    if prior_random is None:
-        eff = 1
-    else:
-        eff = prior_random / test_ratio
-    if task == 'high':
-        c = np.percentile(y_extra_predict, pecentage)
-        # c = np.percentile(y_extra_predict, pecentage)
-        count_extra = len(np.where(y_extra_predict >= c)[0])
-        count_inter = len(np.where(y_inter_predict >= c)[0])
-        me = (count_extra / (count_extra + count_inter)) / test_ratio  # * eff
-        # print((count_extra / (count_extra + count_inter)))
-    else:
-        c = np.percentile(y_extra_predict, 100 - pecentage)
-        count_extra = len(np.where(y_extra_predict <= c)[0])
-        count_inter = len(np.where(y_inter_predict <= c)[0])
-        me = (count_extra / (count_extra + count_inter)) / test_ratio  # * eff
-        # print((count_extra / (count_extra + count_inter)) / test_ratio)
-    # print(c)
-    # print(count_extra)
-    # print(count_inter)
-    return me
 
 
 def discovery_precision(y_extra_predict, y_inter_predict, y_extra_true, y_inter_true, alpha=None):
     """
+    calculation of discovery_precision DP
     :param y_extra_predict: y prediction in validation set
     :param y_inter_predict: y out of bag prediction  in training set
     :param y_extra_true: y true in validation set
